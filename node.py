@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 
-import socket, data, cryptic, os, base64, datetime, hashlib
+import socket, data, cryptic, os, base64, datetime, hashlib, sqlite3
 from threading import Thread
 
 PORT = 3477
@@ -37,6 +37,7 @@ def manage(con):
 	data.send_msg(con, cryptic.encrypt(thisAES, thisIV, 'OK'))	# Send 'OK' with the received key
 
 	# INTENTIONS
+	DB = sqlite3.connect('database')
 	global IDENTITIES
 	intention = cryptic.decrypt(thisAES, thisIV, data.recv_msg(con))
 	CID = ''
@@ -50,9 +51,15 @@ def manage(con):
 				# There is already an identity with the same hash.
 				data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x01'))
 			else:
-				# Ready.
+				# Unique identity hash.
 				data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x00'))
 				IDENTITIES[CID] = PUB
+
+				# Insert into database
+				cursor = DB.cursor()
+				cursor.execute("INSERT INTO IDENTITIES (CID, PUB) VALUES (?, ?)", (CID, PUB))
+				DB.commit()
+				DB.close()
 				break
 		con.close()
 		return
@@ -115,6 +122,13 @@ def manage(con):
 	elif mode == '\x02':
 		# DELETE
 		IDENTITIES.pop(CID, None)
+
+		# Delete from database
+		cursor = DB.cursor()
+		cursor.execute("DELETE FROM IDENTITIES WHERE CID=?", (CID,))
+		DB.commit()
+		DB.close()
+
 		data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x00'))
 		con.close()
 	else:
@@ -129,12 +143,31 @@ if __name__ == '__main__':
 		priv = f.read()
 	priv = cryptic.getRSACipher(priv)
 
+	# Connect to database
+	DB = sqlite3.connect('database')
+
+	# Initialize database
+	cursor = DB.cursor()
+	areTablesThere = False
+	for i in cursor.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='IDENTITIES'"):
+		areTablesThere = True
+	if not areTablesThere:
+		cursor.execute("CREATE TABLE 'IDENTITIES' ('ID' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 'CID' TEXT, 'PUB' TEXT)")
+		DB.commit()
+
 	global IDENTITIES
 	global CONNECTIONS
 	global DELAYED
 	IDENTITIES = {}
 	CONNECTIONS = {}
 	DELAYED = {}
+
+	# Load identities
+	for i in cursor.execute("SELECT CID, PUB FROM IDENTITIES"):
+		IDENTITIES[i[0]] = i[1]
+
+	# Close database. The thread will connect to it later.
+	DB.close()
 
 	ss = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	ss.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
