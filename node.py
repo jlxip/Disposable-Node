@@ -94,6 +94,8 @@ def manage(con):
 
 		# Now, the socket, as it's stored in a global variable, will remain open after the thread exits.
 		# It will be used in the future to be sent messages.
+		# Now, return, so that the socket is not closed.
+		return
 	elif mode == '\x01':
 		# SENDING MODE
 		while(True):
@@ -101,13 +103,16 @@ def manage(con):
 				recv = cryptic.decrypt(thisAES, thisIV, data.recv_msg(con))
 			except:
 				break
-			msg_from = CID
+			
+			#msg_from = CID
 			msg_to = recv.split('|')[0]
 			msg_time = int(datetime.datetime.utcnow().strftime('%s'))	# UTC. The client will adjust it to local time
-			msg_content = recv.split('|')[1]	# It's in base64, but there's no need to decode it.
+			msg_key = recv.split('|')[1]
+			msg_content = recv.split('|')[2]
+			# DELETE THE LINE BELOW!!!!!
 			# Remember: "int(time.time()) - Ans" to get the delay in seconds
 
-			tosend = msg_from+'|'+msg_time+'|'+msg_content
+			tosend = CID+'|'+str(msg_time)+'|'+msg_key+'|'+msg_content
 			try:
 				# Assumes the receiver is connected. If not, goes to except.
 				msg_to_connection = CONNECTIONS[msg_to]
@@ -130,9 +135,14 @@ def manage(con):
 		DB.close()
 
 		data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x00'))
-		con.close()
-	else:
-		con.close()
+	elif mode[0] == '\x03':
+		# GET PUBLIC KEY
+		mode = mode[1:]
+		if mode in IDENTITIES:
+			data.send_msg(con, cryptic.encrypt(thisAES, thisIV, IDENTITIES[mode]))
+		else:
+			data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x01'))
+	con.close()
 
 if __name__ == '__main__':
 	if not os.path.isfile('priv.key'):
