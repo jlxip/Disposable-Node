@@ -6,10 +6,8 @@ from threading import Thread
 PORT = 3477
 SIMULTANEOUS_CONNECTIONS = 1024
 
-def checkClient(con, thisAES, thisIV):
+def checkClient(CID, con, thisAES, thisIV):
 	global IDENTITIES
-	data.send_msg(con, cryptic.encrypt(thisAES, thisIV, 'OK'))	# Ready to receive the CID
-	CID = cryptic.decrypt(thisAES, thisIV, data.recv_msg(con))
 	if not CID in IDENTITIES:
 		data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x01'))	# Inexisting client.
 		return False
@@ -63,9 +61,9 @@ def manage(con):
 				break
 		con.close()
 		return
-	elif intention == '\x01':
+	elif intention[0] == '\x01':
 		# AUTHENTICATE
-		CID = checkClient(con, thisAES, thisIV)
+		CID = checkClient(intention[1:], con, thisAES, thisIV)
 		if not CID:
 			con.close()
 			return
@@ -103,7 +101,7 @@ def manage(con):
 				recv = cryptic.decrypt(thisAES, thisIV, data.recv_msg(con))
 			except:
 				break
-			
+
 			#msg_from = CID
 			msg_to = recv.split('|')[0]
 			msg_time = int(datetime.datetime.utcnow().strftime('%s'))	# UTC. The client will adjust it to local time
