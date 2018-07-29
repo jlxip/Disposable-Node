@@ -86,7 +86,11 @@ Finally, the node keeps the connection open (in this official implementation, by
 #### Sending mode
 In case `\x01` is sent to the node, the node enters in a loop, which won't be broken until either the client ends the connection or the node is closed.
 
-For each iteration of the loop, the node awaits for incoming data (messages), which will be formatted according to the following structure:
+For each iteration of the loop, the node awaits for incoming data.
+
+If the received data starts with `\x00`, it's a writing ping (which is sent when the client is writing). In this case, the rest of the data (from position one until the end) is the CID of the receiver. The node, then, sends the receiver `\x00|{receiver}|{sender}`, and repeats the loop.
+
+If it doesn't start with `\x00`, it's a regular message, and will be formatted according to the following structure:
 
 ```
 {RECEIVER CID}|{RANDOM AES-256 KEY}|{CONTENT}
