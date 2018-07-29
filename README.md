@@ -17,7 +17,7 @@ Finally, run `node.py` to boot up the node.
 Make sure to have the port 3477 (or any of your choice, in which case change PORT at the top of `node.py` and `gennodefile.py`) open.
 
 ## The protocol
-Once the connection has been established, if `\x00` is sent to the node, it will just close the connection. This is a "ping" that the client makes when it's open to see if the node is up and running.
+Once the connection has been established, if `\x00` is sent to the node, it will just close the connection. This is a "ping" that the client makes when it's opened to see if the node is up and running.
 
 ### Key exchange
 The first thing the node does when it receives a connection is the key exchange.
@@ -42,7 +42,7 @@ In case `\x00` is sent to the node, the node prepares for creating an identity, 
 
 Then, both the client and the node enter in a loop (to prevent hash collisions, which, despite highly improbable, can happen).
 
-The client generates a random pair of 4096-bits RSA keys, and sends the public key over the wire.
+The client generates a random pair of 4096-bit RSA keys, and sends the public key over the wire.
 
 Then, the node receives the public key, and hashes it with MD5.
 
@@ -77,7 +77,7 @@ Once the client is authenticated, it sends a "mode" code (like a second intentio
 - For any other byte, the node terminates the connection.
 
 #### Listening mode
-In case `\x00` is sent to the node, the node appends the current socket, along with the AES symmetric key and the initialization vector of the transmission, to an array (_CONNECTIONS_), which will be used in the future to be sent new messages.
+In case `\x00` is sent to the node, this appends the current socket, along with the AES symmetric key and the initialization vector of the transmission, to an array (_CONNECTIONS_), which will be used in the future to send messages.
 
 Then, the node looks for delayed messages sent to the CID of the client, and, if there are any, sends them now.
 
@@ -89,10 +89,10 @@ In case `\x01` is sent to the node, the node enters in a loop, which won't be br
 For each iteration of the loop, the node awaits for incoming data (messages), which will be formatted according to the following structure:
 
 ```
-{RECEIVER CID} | {RANDOM AES-256 KEY} | {CONTENT}
+{RECEIVER CID}|{RANDOM AES-256 KEY}|{CONTENT}
 ```
 
-The content of the message is encrypted with the random AES-256 key, using a null initialization vector (16\*`\x00`). The IV is not necessary, as the symmetric key will only be used once.
+The content of the message is encrypted with the random AES-256 key, using a null initialization vector (16\*`\x00`). The IV is not necessary, as the symmetric key is only used once.
 
 The random AES-256 key is encrypted with the public key of the receiver (see **Public key request mode** below).
 
@@ -100,14 +100,14 @@ Both the random AES key and the content are encoded in base64, to keep the separ
 
 Then, the node formats the message:
 ```
-{CONNECTION CID (SENDER)} | {UTC UNIX TIMESTAMP} | {KEY} | {CONTENT}
+{CONNECTION CID (SENDER)}|{UTC UNIX TIMESTAMP}|{KEY}|{CONTENT}
 ```
 
-Both the key and the content remain untouched. The sender CID is the CID of the client whose socket is in sending mode. The UTC unix timestamp will later be converted by the client into local time.
+Both the key and the content remain untouched. The sender CID is the CID of the client whose socket is in sending mode. The UTC unix timestamp will later be converted by the client to local time.
 
 Next, the node tries to deliever the formatted message to the socket of the receiver which is in the listening mode.
 
-In case it can't be sent (either because the receiver's socket in listening mode is closed or because there is none in memory), the message is appended to the delayed messages array, and will be sent to the receiver when a socket in listening mode is set.
+In case it can't be sent (either because the receiver's socket in listening mode is closed or because there is none in memory), the message is pushed into the delayed messages array, and will be sent to the receiver when a socket in listening mode is set.
 
 Either if the message could be sent or not, the node goes for another iteration of the loop.
 
