@@ -121,6 +121,11 @@ def manage(con):
 
 			#msg_from = CID
 			msg_to = recv.split('|')[0]
+
+			if not msg_to in IDENTITIES:
+				data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x01'))
+				continue
+
 			msg_time = int(time.time())
 			msg_key = recv.split('|')[1]
 			msg_content = recv.split('|')[2]
@@ -137,6 +142,8 @@ def manage(con):
 				if not msg_to in DELAYED:
 					DELAYED[msg_to] = []
 				DELAYED[msg_to].append(tosend)
+
+			data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x00'))
 	elif mode == '\x02':
 		# DELETE
 		IDENTITIES.pop(CID, None)

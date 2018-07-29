@@ -102,7 +102,12 @@ The random AES-256 key is encrypted with the public key of the receiver (see **P
 
 Both the random AES key and the content are encoded in base64, to keep the separations. The receiver CID is not encoded in base64 as it's always stored and displayed in hexadecimal.
 
-Then, the node formats the message:
+Now the node checks whether the receiver CID exists.
+
+In case it doesn't, it returns `\x01`, and continues the loop (skipping all the following).
+
+In case it does, the node formats the message:
+
 ```
 {CONNECTION CID (SENDER)}|{UTC UNIX TIMESTAMP}|{KEY}|{CONTENT}
 ```
@@ -113,7 +118,7 @@ Next, the node tries to deliever the formatted message to the socket of the rece
 
 In case it can't be sent (either because the receiver's socket in listening mode is closed or because there is none in memory), the message is pushed into the delayed messages array, and will be sent to the receiver when a socket in listening mode is set.
 
-Either if the message could be sent or not, the node goes for another iteration of the loop.
+Either if the message could be sent at the moment or not, the node returns `\x00` and goes for another iteration of the loop.
 
 #### Deletion mode
 In case `\x02` is sent to the node, it deletes the identity (both the CID and the public key) from memory and the database.
