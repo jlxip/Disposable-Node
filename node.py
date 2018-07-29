@@ -107,8 +107,6 @@ def manage(con):
 			msg_time = int(datetime.datetime.utcnow().strftime('%s'))	# UTC. The client will adjust it to local time
 			msg_key = recv.split('|')[1]
 			msg_content = recv.split('|')[2]
-			# DELETE THE LINE BELOW!!!!!
-			# Remember: "int(time.time()) - Ans" to get the delay in seconds
 
 			tosend = CID+'|'+str(msg_time)+'|'+msg_key+'|'+msg_content
 			try:
@@ -131,8 +129,6 @@ def manage(con):
 		cursor.execute("DELETE FROM IDENTITIES WHERE CID=?", (CID,))
 		DB.commit()
 		DB.close()
-
-		data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x00'))
 	elif mode[0] == '\x03':
 		# GET PUBLIC KEY
 		mode = mode[1:]
