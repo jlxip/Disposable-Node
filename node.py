@@ -36,6 +36,7 @@ def manage(con):
 
 	# INTENTIONS
 	DB = sqlite3.connect('database')
+	cursor = DB.cursor()
 	global IDENTITIES
 	intention = cryptic.decrypt(thisAES, thisIV, data.recv_msg(con))
 	CID = ''
@@ -49,12 +50,18 @@ def manage(con):
 				# There is already an identity with the same hash.
 				data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x01'))
 			else:
+				# If it's in deleted
+				isDeleted = False
+				for i in cursor.execute("SELECT 1 FROM DELETED WHERE CID=?", (CID,)):
+					isDeleted = True
+				if isDeleted:
+					# There was an identity with the same hash in the past.
+					data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x01'))
 				# Unique identity hash.
 				data.send_msg(con, cryptic.encrypt(thisAES, thisIV, '\x00'))
 				IDENTITIES[CID] = PUB
 
 				# Insert into database
-				cursor = DB.cursor()
 				cursor.execute("INSERT INTO IDENTITIES (CID, PUB) VALUES (?, ?)", (CID, PUB))
 				DB.commit()
 				DB.close()
@@ -124,9 +131,10 @@ def manage(con):
 		# DELETE
 		IDENTITIES.pop(CID, None)
 
-		# Delete from database
 		cursor = DB.cursor()
-		cursor.execute("DELETE FROM IDENTITIES WHERE CID=?", (CID,))
+		cursor.execute("DELETE FROM IDENTITIES WHERE CID=?", (CID,))	# Delete from database
+		cursor.execute("INSERT INTO DELETED (CID) VALUES (?)", (CID,))	# Add to DELETED
+
 		DB.commit()
 		DB.close()
 	elif mode[0] == '\x03':
@@ -157,6 +165,7 @@ if __name__ == '__main__':
 		areTablesThere = True
 	if not areTablesThere:
 		cursor.execute("CREATE TABLE 'IDENTITIES' ('ID' INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 'CID' TEXT, 'PUB' TEXT)")
+		cursor.execute("CREATE TABLE 'DELETED' ('CID' TEXT PRIMARY KEY NOT NULL)")
 		DB.commit()
 
 	global IDENTITIES
