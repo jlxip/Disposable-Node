@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 
-import socket, data, cryptic, os, base64, datetime, hashlib, sqlite3
+import socket, data, cryptic, os, base64, hashlib, sqlite3
 from threading import Thread
 
 PORT = 3477
@@ -121,7 +121,7 @@ def manage(con):
 
 			#msg_from = CID
 			msg_to = recv.split('|')[0]
-			msg_time = int(datetime.datetime.utcnow().strftime('%s'))	# UTC. The client will adjust it to local time
+			msg_time = int(time.time())
 			msg_key = recv.split('|')[1]
 			msg_content = recv.split('|')[2]
 
