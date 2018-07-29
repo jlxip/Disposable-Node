@@ -109,6 +109,16 @@ def manage(con):
 			except:
 				break
 
+			if recv[0] == '\x00':
+				# Writing...
+				msg_to = recv[1:]
+				try:
+					msg_to_connection = CONNECTIONS[msg_to]
+					data.send_msg(msg_to_connection[0], cryptic.encrypt(msg_to_connection[1], msg_to_connection[2], recv+'|'+CID))
+				except:
+					pass
+				continue
+
 			#msg_from = CID
 			msg_to = recv.split('|')[0]
 			msg_time = int(datetime.datetime.utcnow().strftime('%s'))	# UTC. The client will adjust it to local time
