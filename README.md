@@ -3,7 +3,7 @@
 ## Introduction
 A node for Disposable. Which acts as an intermediary between clients.
 
-This protects their IP, doesn't force the clients to open ports, and lets them use any proxy or VPN they want. For more information, [read the README of the client](https://git.jlxip.net/jlxip/Disposable-Client).
+This protects their IP, doesn't force the clients to open ports, and lets them use any proxy or VPN they want. For more information, [read the README of the client](https://github.com/jlxip/Disposable-Client).
 
 The node stores in a database (powered by SQLite) the identities. However, the "delayed" messages (those who could not be sent because the receiver wasn't connected) are not, they are stored in memory, so make sure only to close the node when it's absolutely necessary.
 
