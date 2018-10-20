@@ -1,4 +1,4 @@
-from random import randint
+import os
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
@@ -17,7 +17,7 @@ def decrypt(key, IV, data):
     return unpad(getCipher(key, IV).decrypt(data))
 
 def genRandomString(length):
-	return ''.join([chr(randint(0, 255)) for i in range(length)])
+	return os.urandom(length)
 
 def genIV():
 	return genRandomString(BS)
